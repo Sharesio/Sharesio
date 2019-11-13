@@ -3,6 +3,7 @@ from pymessenger.bot import Bot
 
 from sharesio.config import config
 from sharesio.log import log
+from sharesio.quick_reply import QuickReplies
 from sharesio.repository import ImageInMemoryRepository, UserInMemoryRepository, User
 
 
@@ -28,6 +29,9 @@ class MessengerBot:
             images = self._image_repository.find_all_by_user_id(sender_id)
             self._bot.send_text_message(recipient_id=sender_id, message=f"You sent {len(images)} unique pictures")
 
+        elif text_message.lower() == 'hi':
+            self._send_quick_reply(sender_id, 'Do you want a cookie?', QuickReplies.yes_or_no())
+
     def on_attachment(self, sender_id, attachment):
         log(f"[{sender_id}] - received attachment: {attachment}")
         if attachment['type'] == 'image':
@@ -45,3 +49,16 @@ class MessengerBot:
     def _get_person_details(self, id):
         request_endpoint = f"{self._facebook_api_url}/{id}?fields=first_name,last_name,profile_pic&access_token={config['page_access_token']}"
         return requests.get(request_endpoint).json()
+
+    def _send_quick_reply(self, recipient_id, message, quick_replies):
+        payload = {
+            'recipient': {
+                'id': recipient_id
+            },
+            'messaging_type': 'RESPONSE',
+            'message': {
+                'text': message,
+                'quick_replies': [q.to_text_payload() for q in quick_replies]
+            }
+        }
+        return self._bot.send_raw(payload)
