@@ -1,10 +1,21 @@
 from flask import request
+from pymessenger import Bot
 
 from sharesio import app
 from sharesio.config import config
+from sharesio.event_dispatcher import EventDispatcher
+from sharesio.messenger_api import MessengerApi
 from sharesio.messenger_bot import MessengerBot
+from sharesio.repository import InMemoryImageRepository, InMemoryUserRepository
 
-_bot = MessengerBot()
+_pymessenger_bot = Bot(config['page_access_token'])
+
+_api = MessengerApi(_pymessenger_bot)
+_image_repository = InMemoryImageRepository()
+_user_repository = InMemoryUserRepository()
+_messenger_bot = MessengerBot(_api, _image_repository, _user_repository)
+
+_event_dispatcher = EventDispatcher(_messenger_bot)
 
 
 @app.route('/', methods=['GET'])
@@ -24,12 +35,20 @@ def verify_token():
 def on_message():
     for event in request.json['entry']:
         for x in event['messaging']:
+            if x.get('postback'):
+                sender_id = x['sender']['id']
+                if x['postback'].get('payload'):
+                    payload = x['postback']['payload']
+                    _event_dispatcher.on_postback(sender_id, payload)
             if x.get('message'):
                 sender_id = x['sender']['id']
                 if x['message'].get('text'):
                     text = x['message']['text']
-                    _bot.on_text_message(sender_id, text)
+                    _event_dispatcher.on_text_message(sender_id, text)
                 if x['message'].get('attachments'):
                     for a in x['message']['attachments']:
-                        _bot.on_attachment(sender_id, a)
+                        _event_dispatcher.on_attachment(sender_id, a)
+                if x['message'].get('quick_reply'):
+                    if x['message']['quick_reply'].get('payload'):
+                        _event_dispatcher.on_postback(sender_id, x['message']['quick_reply']['payload'])
     return 'ok'

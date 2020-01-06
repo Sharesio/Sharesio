@@ -1,11 +1,7 @@
-from enum import Enum
+from sharesio.postback import Postback
 
 
 class QuickReply:
-    class Postback(str, Enum):
-        YES = 'QUICK_REPLY_POSTBACK_YES'
-        NO = 'QUICK_REPLY_POSTBACK_NO'
-
     def __init__(self, title, image_url, postback_payload):
         self._title = title
         self._image_url = image_url
@@ -22,8 +18,8 @@ class QuickReply:
 
 class QuickReplies:
     @staticmethod
-    def yes_or_no():
+    def profile_picture():
         return [
-            QuickReply('Yes', None, QuickReply.Postback.YES),
-            QuickReply('No', None, QuickReply.Postback.NO)
+            QuickReply('Use profile picture', None, Postback.REGISTER_WITH_PROFILE_PICTURE),
+            QuickReply('Upload new picture', None, Postback.REGISTER_WITH_UPLOADED_PICTURE)
         ]
