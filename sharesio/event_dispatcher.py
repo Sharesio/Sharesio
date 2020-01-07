@@ -10,11 +10,14 @@ class EventDispatcher:
     def on_postback(self, sender_id, payload):
         log(f"[{sender_id}] - received postback with payload: {payload}")
 
-        if payload == Postback.DELETE_ACCOUNT:
+        if payload == Postback.CREATE_ACCOUNT:
+            self._bot.create_account(sender_id)
+
+        elif payload == Postback.DELETE_ACCOUNT:
             self._bot.delete_account(sender_id)
 
-        elif payload == Postback.CREATE_ACCOUNT:
-            self._bot.create_account(sender_id)
+        elif payload == Postback.HELP:
+            self._bot.help(sender_id)
 
         elif payload == Postback.REGISTER_WITH_PROFILE_PICTURE:
             self._bot.register_with_profile_picture(sender_id)

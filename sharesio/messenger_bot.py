@@ -13,16 +13,25 @@ class MessengerBot:
         self._image_repository = image_repository  # TODO: image repository might be redundant
         self._user_repository = user_repository
 
-    def delete_account(self, user_id):
-        self._image_repository.delete_all_by_user_id(user_id)
-        self._user_repository.delete_by_id(user_id)
-        self._api.send_text_message(user_id, 'Thank you for using Sharesio!')
-
     def create_account(self, user_id):
-        first_name, last_name = self._api.get_person_first_and_last_name(user_id)
-        user = User(user_id, first_name, last_name)
-        self._user_repository.save(user)
-        self._api.send_quick_reply(user_id, 'Which picture of your face do you want to use?', QuickReplies.profile_picture())
+        if self._user_repository.find_by_id(user_id):
+            self._api.send_text_message(user_id, 'You already have an account.')
+        else:
+            first_name, last_name = self._api.get_person_first_and_last_name(user_id)
+            user = User(user_id, first_name, last_name)
+            self._user_repository.save(user)
+            self._api.send_quick_reply(user_id, 'Which picture of your face do you want to use?', QuickReplies.profile_picture())
+
+    def delete_account(self, user_id):
+        if self._user_repository.find_by_id(user_id):
+            self._image_repository.delete_all_by_user_id(user_id)
+            self._user_repository.delete_by_id(user_id)
+            self._api.send_text_message(user_id, 'Thank you for using Sharesio!')
+        else:
+            self._api.send_text_message(user_id, "You don't have an account.")
+
+    def help(self, user_id):
+        self._api.send_text_message(user_id, 'For help please visit the documentation.')
 
     def register_with_profile_picture(self, user_id):
         picture_url = self._api.get_person_profile_url(user_id)

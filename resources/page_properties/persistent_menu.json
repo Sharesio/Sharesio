@@ -5,8 +5,18 @@
     "call_to_actions": [
       {
         "type": "postback",
+        "title": "Create account",
+        "payload": "POSTBACK_CREATE_ACCOUNT"
+      },
+      {
+        "type": "postback",
         "title": "Delete account",
         "payload": "POSTBACK_DELETE_ACCOUNT"
+      },
+      {
+        "type": "postback",
+        "title": "Help",
+        "payload": "POSTBACK_HELP"
       }
     ]
   }
