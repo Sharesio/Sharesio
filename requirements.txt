@@ -1,3 +1,5 @@
+imageio
+face_recognition
 requests
 pymessenger
 flask

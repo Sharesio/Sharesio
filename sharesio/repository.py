@@ -19,10 +19,10 @@ class InMemoryImageRepository(ImageRepository):
     def __init__(self):
         self._images = {}
 
-    def save(self, user_id, image_url):
+    def save(self, user_id, embedding):
         if user_id not in self._images.keys():
-            self._images[user_id] = set()
-        self._images[user_id].add(image_url)
+            self._images[user_id] = []
+        self._images[user_id] += [embedding]
 
     def find_all_by_user_id(self, user_id):
         if user_id in self._images.keys():
@@ -40,44 +40,47 @@ class UserRepository(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def find_by_page_scoped_id(self, id):
+    def find_by_id(self, id):
         pass
 
     @abc.abstractmethod
-    def delete_by_page_scoped_id(self, id):
+    def find_all_registered(self):
+        pass
+
+    @abc.abstractmethod
+    def delete_by_id(self, id):
         pass
 
 
 class InMemoryUserRepository(UserRepository):
     def __init__(self):
-        self._users = []
+        self._users = {}
 
     def save(self, user):
-        if not self.find_by_page_scoped_id(user.page_scoped_id):
-            self._users.append(user)
+        if user.id not in self._users.keys():
+            self._users[user.id] = user
 
-    def find_by_page_scoped_id(self, id):
-        users = [u for u in self._users if u.page_scoped_id == id]
-        if len(users) > 0:
-            return users[0]
+    def find_by_id(self, id):
+        if id in self._users.keys():
+            return self._users[id]
         else:
             return None
 
-    def delete_by_page_scoped_id(self, id):
-        self._users = [u for u in self._users if u.page_scoped_id != id]
+    def find_all_registered(self):
+        return {k: v for k, v in self._users.items() if v.is_registered}
+
+    def delete_by_id(self, id):
+        self._users.pop(id, None)
 
 
 class User:
-    def __init__(self, page_scoped_id, first_name, last_name):
-        self.page_scoped_id = page_scoped_id
+    def __init__(self, id, first_name, last_name):
+        self.id = id
         self.first_name = first_name
         self.last_name = last_name
-        self._registered = False
-        self.face_picture_url = None
+        self.is_registered = False
+        self.embedding = None
 
-    def register(self, face_picture_url):
-        self._registered = True
-        self.face_picture_url = face_picture_url
-
-    def is_registered(self):
-        return self._registered
+    def register(self, embedding):
+        self.is_registered = True
+        self.embedding = embedding

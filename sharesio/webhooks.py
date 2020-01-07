@@ -4,6 +4,7 @@ from pymessenger import Bot
 from sharesio import app
 from sharesio.config import config
 from sharesio.event_dispatcher import EventDispatcher
+from sharesio.face_recognition import FaceRecognition
 from sharesio.messenger_api import MessengerApi
 from sharesio.messenger_bot import MessengerBot
 from sharesio.repository import InMemoryImageRepository, InMemoryUserRepository
@@ -11,9 +12,10 @@ from sharesio.repository import InMemoryImageRepository, InMemoryUserRepository
 _pymessenger_bot = Bot(config['page_access_token'])
 
 _api = MessengerApi(_pymessenger_bot)
+_face_recognition = FaceRecognition()
 _image_repository = InMemoryImageRepository()
 _user_repository = InMemoryUserRepository()
-_messenger_bot = MessengerBot(_api, _image_repository, _user_repository)
+_messenger_bot = MessengerBot(_api, _face_recognition, _image_repository, _user_repository)
 
 _event_dispatcher = EventDispatcher(_messenger_bot)
 
