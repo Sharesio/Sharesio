@@ -25,7 +25,10 @@ class MessengerApi:
                 'quick_replies': [q.to_text_payload() for q in quick_replies]
             }
         }
-        return self._bot.send_raw(payload)
+        self._bot.send_raw(payload)
+
+    def send_picture(self, recipient_id, picture_url):
+        self._bot.send_image_url(recipient_id, picture_url)
 
     def get_person_details(self, id):
         endpoint = f"{self._bot.graph_url}/{id}?fields=first_name,last_name,profile_pic&access_token={config['page_access_token']}"
@@ -39,3 +42,8 @@ class MessengerApi:
         endpoint = f"{self._bot.graph_url}/{id}?fields=first_name,last_name&access_token={config['page_access_token']}"
         person_details = requests.get(endpoint).json()
         return person_details['first_name'], person_details['last_name']
+
+    def get_person_full_name(self, id):
+        endpoint = f"{self._bot.graph_url}/{id}?fields=first_name,last_name&access_token={config['page_access_token']}"
+        person_details = requests.get(endpoint).json()
+        return f"{person_details['first_name']} {person_details['last_name']}"

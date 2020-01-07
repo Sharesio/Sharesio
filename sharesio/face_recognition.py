@@ -11,29 +11,23 @@ class FaceRecognition:
         image: numpy array (image should only contain one face)
         Returns
         -------
-        Face encoding of the input image if face encoding could be calculated.
+        Face embedding of the input image if face embedding could be calculated.
         None if no face or more than one face was found.
         """
-        encoding = face_recognition.face_encodings(image)
-        if len(encoding) == 1:
-            return encoding[0]
-        elif len(encoding) == 0:
+        embedding = face_recognition.face_encodings(image)
+        if len(embedding) == 1:
+            return embedding[0]
+        elif len(embedding) == 0:
             return None
-        elif len(encoding) > 1:
+        elif len(embedding) > 1:
             return None
 
     @staticmethod
-    def compare_face_encodings(known_face_encodings, face_encoding_to_check):
+    def face_embeddings(image):
         """
-        Compare a list of face encodings against a candidate encoding to see if they match.
-        :param known_face_encodings: A list of known face encodings
-        :param face_encoding_to_check: A single face encoding to compare against the list
-        Returns
-        -------
-        A list of True/False values indicating which known_face_encodings match the face encoding to check
+        Returns a list of all face embeddings found in the input image.
         """
-        result = face_recognition.compare_faces(known_face_encodings, face_encoding_to_check, tolerance=0.6)
-        return result
+        return face_recognition.face_encodings(image)
 
     @staticmethod
     def get_cropped_faces_from_image(image):
@@ -52,23 +46,28 @@ class FaceRecognition:
         return face_list
 
     @staticmethod
-    def get_encodings_from_image(image):
+    def compare_embeddings(known_face_embeddings, face_embedding_to_check):
         """
-        Returns a list of all face encodings found in the input image.
-        """
-        return face_recognition.face_encodings(image)
-
-    def find_match(self, encoding_to_check, faces_dict):
-        """
-        Compares a face encoding with all face encodings in the database.
-        :param encoding_to_check: Encoding to check against the database as numpy array
-        :param faces_dict: Dictionary in form {"img_id"{"Name","Encoding"}}
+        Compare a list of face embeddings against a candidate embedding to see if they match.
+        :param known_face_embeddings: A list of known face embeddings
+        :param face_embedding_to_check: A single face embedding to compare against the list
         Returns
         -------
-        If a match was found, the face encoding of the match will be returned.
+        A list of True/False values indicating which known_face_embeddings match the face embedding to check
+        """
+        return face_recognition.compare_faces(known_face_embeddings, face_embedding_to_check, tolerance=0.6)
+
+    def find_matching_user_id(self, embedding_to_check, faces_dict):
+        """
+        Compares a face embedding with all face embeddings in the dictionary.
+        :param embedding_to_check: embedding to check against the database as numpy array
+        :param faces_dict: Dictionary in form {user_id: [embedding]}
+        Returns
+        -------
+        If a match was found, the user_id with matching embedding will be returned.
         If no match was found, None will be returned.
         """
-        for user_id, embedding in faces_dict.items():
-            if self.compare_face_encodings([embedding], encoding_to_check)[0]:
+        for user_id, embeddings in faces_dict.items():
+            if True in self.compare_embeddings(embeddings, embedding_to_check):
                 return user_id
         return None

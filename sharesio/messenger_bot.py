@@ -35,55 +35,50 @@ class MessengerBot:
 
     def register_with_profile_picture(self, user_id):
         picture_url = self._api.get_person_profile_url(user_id)
-        picture = imageio.imread(picture_url)
-        embedding = self._face_recognition.extract_face_encoding(picture)  # TODO: embedding can be None if no face or too many faces are found
-        # self._image_repository.save(user_id, embedding)
-
-        user = self._user_repository.find_by_id(user_id)
-        user.register(embedding)
-        self._user_repository.save(user)
-        self._api.send_text_message(user_id, f"Your profile picture will be used as your face. Welcome in Sharesio!")
+        self.register(user_id, picture_url)
 
     def register_with_uploaded_picture(self, user_id):
         self._api.send_text_message(user_id, 'Upload a picture of your face.')
 
-    def upload_picture_for_registration(self, user_id, picture_url):
+    def register(self, user_id, picture_url):
         picture = imageio.imread(picture_url)
-        embedding = self._face_recognition.extract_face_encoding(picture)  # TODO: embedding can be None if no face or too many faces are found
-        # self._image_repository.save(user_id, embedding)
-
-        user = self._user_repository.find_by_id(user_id)
-        user.register(embedding)
-        self._user_repository.save(user)
-        self._api.send_text_message(user_id, f"The uploaded picture will be used as your face. Welcome in Sharesio!")
+        embeddings = self._face_recognition.face_embeddings(picture)
+        if len(embeddings) == 1:
+            user = self._user_repository.find_by_id(user_id)
+            user.register(embeddings[0])
+            self._user_repository.save(user)
+            self._image_repository.save(user_id, embeddings[0])
+            self._api.send_text_message(user_id, f"Registration successful, welcome in Sharesio!")
+        else:
+            self._api.send_text_message(user_id, f"The picture should contain exactly 1 face, but it contains {len(embeddings)} faces. Please upload a new picture.")
 
     def upload_picture(self, user_id, picture_url):
-        registered_users = self._user_repository.find_all_registered()
-        faces_dict = {k: v.embedding for k, v in registered_users.items()}
+        faces_dict = self._image_repository.find_all()
         picture = imageio.imread(picture_url)
-        embeddings = self._face_recognition.get_encodings_from_image(picture)
-
+        embeddings = self._face_recognition.face_embeddings(picture)
         matching_user_ids = []
-        for embedding in embeddings:
-            matching_user_id = self._face_recognition.find_match(embedding, faces_dict)
-            if matching_user_id is not None:
+        for i, embedding in enumerate(embeddings):
+            matching_user_id = self._face_recognition.find_matching_user_id(embedding, faces_dict)
+            if matching_user_id:
                 matching_user_ids += [matching_user_id]
+                self._image_repository.save(matching_user_id, embedding)
             else:
                 pass  # TODO: face was not recognised
 
-        matching_names = [f"{registered_users[id].first_name} {registered_users[id].last_name}" for id in matching_user_ids]
-        self._api.send_text_message(user_id, f"Recognized: {', '.join(matching_names)}.")
-
         for id in matching_user_ids:
-            if id != user_id:
-                pass  # TODO: send the picture to user with this id
+            # if id != user_id:  # TODO: uncomment
+            self._api.send_text_message(id, f"{self._api.get_person_full_name(user_id)} uploaded a picture with your face:")
+            self._api.send_picture(id, picture_url)
+            self._api.send_text_message(id, f"You now have {len(self._image_repository.find_all_by_user_id(user_id))} embeddings.")
 
         # TODO: if some faces are not recognized then ask the user to provide their names
         # TODO: the same person can't be more than 1 time on a single picture
         # TODO: ask the user if the match made by the system is correct (using quick replies)?
         # TODO: maybe use some threshold (if more than 90% sure than don't ask, otherwise ask)
-        # TODO: consider saving all face embeddings of every user so that a new face can be matched to all previous embeddings
-        self._api.send_text_message(user_id, 'Picture was successfully submitted.')
+
+        registered_users = self._user_repository.find_all_registered()
+        matching_names = [registered_users[id].full_name() for id in matching_user_ids]  # TODO: remove sender name
+        self._api.send_text_message(user_id, f"Picture was sent to: {', '.join(matching_names)}.")
 
     def is_user_registered(self, user_id):
         user = self._user_repository.find_by_id(user_id)

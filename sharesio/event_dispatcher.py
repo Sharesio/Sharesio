@@ -41,4 +41,4 @@ class EventDispatcher:
         if self._bot.is_user_registered(sender_id):
             self._bot.upload_picture(sender_id, picture_url)
         else:
-            self._bot.upload_picture_for_registration(sender_id, picture_url)
+            self._bot.register(sender_id, picture_url)

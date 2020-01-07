@@ -3,7 +3,11 @@ import abc
 
 class ImageRepository(abc.ABC):
     @abc.abstractmethod
-    def save(self, user_id, image_url):
+    def save(self, user_id, embedding):
+        pass
+
+    @abc.abstractmethod
+    def find_all(self):
         pass
 
     @abc.abstractmethod
@@ -23,6 +27,9 @@ class InMemoryImageRepository(ImageRepository):
         if user_id not in self._images.keys():
             self._images[user_id] = []
         self._images[user_id] += [embedding]
+
+    def find_all(self):
+        return self._images
 
     def find_all_by_user_id(self, user_id):
         if user_id in self._images.keys():
@@ -84,3 +91,6 @@ class User:
     def register(self, embedding):
         self.is_registered = True
         self.embedding = embedding
+
+    def full_name(self):
+        return f"{self.first_name} {self.last_name}"
