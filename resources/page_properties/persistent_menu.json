@@ -1,0 +1,13 @@
+[
+  {
+    "locale": "default",
+    "composer_input_disabled": false,
+    "call_to_actions": [
+      {
+        "type": "postback",
+        "title": "Delete account",
+        "payload": "POSTBACK_DELETE_ACCOUNT"
+      }
+    ]
+  }
+]
