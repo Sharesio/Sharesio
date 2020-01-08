@@ -30,6 +30,10 @@ class FaceRecognition:
         return face_recognition.face_encodings(image)
 
     @staticmethod
+    def face_locations(image):
+        return face_recognition.face_locations(image)
+
+    @staticmethod
     def get_cropped_faces_from_image(image):
         """
         Finds all faces in an image.

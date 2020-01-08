@@ -1,5 +1,9 @@
+import json
+
 import requests
+from PIL import Image
 from pymessenger import Bot
+from requests_toolbelt import MultipartEncoder
 
 from sharesio.config import config
 
@@ -27,7 +31,36 @@ class MessengerApi:
         }
         self._bot.send_raw(payload)
 
-    def send_picture(self, recipient_id, picture_url):
+    def send_picture(self, recipient_id, picture):
+        Image.fromarray(picture).save('temp.png')
+        payload = {
+            'recipient': json.dumps(
+                {
+                    'id': recipient_id
+                }
+            ),
+            'message': json.dumps(
+                {
+                    'attachment': {
+                        'type': 'image',
+                        'payload': {}
+                    }
+                }
+            ),
+            'filedata': ('temp.png', open('temp.png', 'rb'), 'image/png')
+        }
+        multipart_data = MultipartEncoder(payload)
+        multipart_header = {
+            'Content-Type': multipart_data.content_type
+        }
+        return requests.post(
+            f"{self._bot.graph_url}/me/messages",
+            params=self._bot.auth_args,
+            headers=multipart_header,
+            data=multipart_data
+        )
+
+    def send_picture_url(self, recipient_id, picture_url):
         self._bot.send_image_url(recipient_id, picture_url)
 
     def get_person_details(self, id):

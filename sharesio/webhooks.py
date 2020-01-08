@@ -7,7 +7,7 @@ from sharesio.event_dispatcher import EventDispatcher
 from sharesio.face_recognition import FaceRecognition
 from sharesio.messenger_api import MessengerApi
 from sharesio.messenger_bot import MessengerBot
-from sharesio.repository import InMemoryImageRepository, InMemoryUserRepository
+from sharesio.repository import InMemoryImageRepository, InMemoryUserRepository, InMemoryUnresolvedPictureRepository
 
 _pymessenger_bot = Bot(config['page_access_token'])
 
@@ -15,7 +15,8 @@ _api = MessengerApi(_pymessenger_bot)
 _face_recognition = FaceRecognition()
 _image_repository = InMemoryImageRepository()
 _user_repository = InMemoryUserRepository()
-_messenger_bot = MessengerBot(_api, _face_recognition, _image_repository, _user_repository)
+_unresolved_picture_repository = InMemoryUnresolvedPictureRepository()
+_messenger_bot = MessengerBot(_api, _face_recognition, _image_repository, _user_repository, _unresolved_picture_repository)
 
 _event_dispatcher = EventDispatcher(_messenger_bot)
 
@@ -35,22 +36,26 @@ def verify_token():
 
 @app.route('/webhook', methods=['POST'])
 def on_message():
-    for event in request.json['entry']:
-        for x in event['messaging']:
-            if x.get('postback'):
-                sender_id = x['sender']['id']
-                if x['postback'].get('payload'):
-                    payload = x['postback']['payload']
-                    _event_dispatcher.on_postback(sender_id, payload)
-            if x.get('message'):
-                sender_id = x['sender']['id']
-                if x['message'].get('text'):
-                    text = x['message']['text']
-                    _event_dispatcher.on_text_message(sender_id, text)
-                if x['message'].get('attachments'):
-                    for a in x['message']['attachments']:
-                        _event_dispatcher.on_attachment(sender_id, a)
-                if x['message'].get('quick_reply'):
-                    if x['message']['quick_reply'].get('payload'):
-                        _event_dispatcher.on_postback(sender_id, x['message']['quick_reply']['payload'])
-    return 'ok'
+    try:
+        for event in request.json['entry']:
+            for x in event['messaging']:
+                if x.get('postback'):
+                    sender_id = x['sender']['id']
+                    if x['postback'].get('payload'):
+                        payload = x['postback']['payload']
+                        _event_dispatcher.on_postback(sender_id, payload)
+                if x.get('message'):
+                    sender_id = x['sender']['id']
+                    if x['message'].get('text'):
+                        text = x['message']['text']
+                        _event_dispatcher.on_text_message(sender_id, text)
+                    if x['message'].get('attachments'):
+                        for a in x['message']['attachments']:
+                            _event_dispatcher.on_attachment(sender_id, a)
+                    if x['message'].get('quick_reply'):
+                        if x['message']['quick_reply'].get('payload'):
+                            _event_dispatcher.on_postback(sender_id, x['message']['quick_reply']['payload'])
+    except:
+        return 'ok'
+    finally:
+        return 'ok'

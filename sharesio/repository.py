@@ -1,4 +1,5 @@
 import abc
+from queue import SimpleQueue
 
 
 class ImageRepository(abc.ABC):
@@ -39,6 +40,53 @@ class InMemoryImageRepository(ImageRepository):
 
     def delete_all_by_user_id(self, user_id):
         self._images.pop(user_id, None)
+
+
+class UnresolvedPictureRepository(abc.ABC):
+    @abc.abstractmethod
+    def save(self, user_id, picture_url, embeddings):
+        pass
+
+    @abc.abstractmethod
+    def has_unresolved_picture(self, user_id):
+        pass
+
+    @abc.abstractmethod
+    def pop_next_unresolved_face(self, user_id):
+        pass
+
+
+class InMemoryUnresolvedPictureRepository(UnresolvedPictureRepository):
+    def __init__(self):
+        self._unresolved_pictures = {}
+
+    def save(self, user_id, picture_url, embeddings):
+        if len(embeddings) > 0:
+            self._unresolved_pictures[user_id] = UnresolvedPicture(picture_url, embeddings)
+
+    def has_unresolved_picture(self, user_id):
+        return user_id in self._unresolved_pictures
+
+    def pop_next_unresolved_face(self, user_id):
+        if user_id in self._unresolved_pictures.keys():
+            picture_url, embedding = self._unresolved_pictures[user_id].pop_next_face()
+            if self._unresolved_pictures[user_id].is_resolved():
+                self._unresolved_pictures.pop(user_id, None)
+            return picture_url, embedding
+        return None
+
+
+class UnresolvedPicture:
+    def __init__(self, picture_url, embeddings):
+        self._picture_url = picture_url
+        self._embeddings = SimpleQueue()
+        [self._embeddings.put(e) for e in embeddings]
+
+    def pop_next_face(self):
+        return self._picture_url, self._embeddings.get()
+
+    def is_resolved(self):
+        return self._embeddings.empty()
 
 
 class UserRepository(abc.ABC):
