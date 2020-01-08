@@ -3,3 +3,4 @@ face_recognition
 requests
 pymessenger
 flask
+uwsgi

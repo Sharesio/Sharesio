@@ -1,5 +1,5 @@
 .idea/
 __pycache__/
-resources/secrets.json
+resources/sensitive/secrets.json
 *.egg-info
 temp.png

@@ -1,4 +1,4 @@
 import json
 
-with open('resources/secrets.json') as f:
+with open('resources/sensitive/secrets.json') as f:
     config = json.load(f)
