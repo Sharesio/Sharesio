@@ -25,4 +25,4 @@ COPY ./sharesio /app/sharesio
 
 RUN ./scripts/install.sh
 
-ENTRYPOINT ["/app/scripts/flask_prod.sh"]
+ENTRYPOINT ["/app/scripts/flask.sh"]
