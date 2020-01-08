@@ -42,53 +42,6 @@ class InMemoryImageRepository(ImageRepository):
         self._images.pop(user_id, None)
 
 
-class UnresolvedPictureRepository(abc.ABC):
-    @abc.abstractmethod
-    def save(self, user_id, picture_url, embeddings):
-        pass
-
-    @abc.abstractmethod
-    def has_unresolved_picture(self, user_id):
-        pass
-
-    @abc.abstractmethod
-    def pop_next_unresolved_face(self, user_id):
-        pass
-
-
-class InMemoryUnresolvedPictureRepository(UnresolvedPictureRepository):
-    def __init__(self):
-        self._unresolved_pictures = {}
-
-    def save(self, user_id, picture_url, embeddings):
-        if len(embeddings) > 0:
-            self._unresolved_pictures[user_id] = UnresolvedPicture(picture_url, embeddings)
-
-    def has_unresolved_picture(self, user_id):
-        return user_id in self._unresolved_pictures
-
-    def pop_next_unresolved_face(self, user_id):
-        if user_id in self._unresolved_pictures.keys():
-            picture_url, embedding = self._unresolved_pictures[user_id].pop_next_face()
-            if self._unresolved_pictures[user_id].is_resolved():
-                self._unresolved_pictures.pop(user_id, None)
-            return picture_url, embedding
-        return None
-
-
-class UnresolvedPicture:
-    def __init__(self, picture_url, embeddings):
-        self._picture_url = picture_url
-        self._embeddings = SimpleQueue()
-        [self._embeddings.put(e) for e in embeddings]
-
-    def pop_next_face(self):
-        return self._picture_url, self._embeddings.get()
-
-    def is_resolved(self):
-        return self._embeddings.empty()
-
-
 class UserRepository(abc.ABC):
     @abc.abstractmethod
     def save(self, user):
@@ -135,6 +88,7 @@ class User:
         self.last_name = last_name
         self.is_registered = False
         self.embedding = None
+        self._picture_with_faces = PictureWithFaces('', [])
 
     def register(self, embedding):
         self.is_registered = True
@@ -142,3 +96,29 @@ class User:
 
     def full_name(self):
         return f"{self.first_name} {self.last_name}"
+
+    def add_unresolved_picture(self, picture_url, embeddings):
+        if len(embeddings) > 0:
+            self._picture_with_faces = PictureWithFaces(picture_url, embeddings)
+
+    def has_unresolved_picture(self):
+        return self._picture_with_faces.is_unresolved()
+
+    def pop_next_unresolved_face(self):
+        if self._picture_with_faces.is_unresolved():
+            return self._picture_with_faces.pop_next_face()
+        else:
+            return None
+
+
+class PictureWithFaces:
+    def __init__(self, picture_url, embeddings):
+        self._picture_url = picture_url
+        self._embeddings = SimpleQueue()
+        [self._embeddings.put(e) for e in embeddings]
+
+    def pop_next_face(self):
+        return self._picture_url, self._embeddings.get()
+
+    def is_unresolved(self):
+        return not self._embeddings.empty()

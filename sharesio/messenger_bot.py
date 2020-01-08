@@ -3,17 +3,15 @@ import imageio
 from sharesio.face_recognition import FaceRecognition
 from sharesio.messenger_api import MessengerApi
 from sharesio.quick_reply import QuickReplies
-from sharesio.repository import User, ImageRepository, UserRepository, UnresolvedPictureRepository
+from sharesio.repository import User, ImageRepository, UserRepository
 
 
 class MessengerBot:
-    def __init__(self, api: MessengerApi, face_recognition: FaceRecognition, image_repository: ImageRepository, user_repository: UserRepository,
-                 unresolved_picture_repository: UnresolvedPictureRepository):
+    def __init__(self, api: MessengerApi, face_recognition: FaceRecognition, image_repository: ImageRepository, user_repository: UserRepository):
         self._api = api
         self._face_recognition = face_recognition
         self._image_repository = image_repository
         self._user_repository = user_repository
-        self._unresolved_picture_repository = unresolved_picture_repository
 
     def create_account(self, user_id):
         if self._user_repository.find_by_id(user_id):
@@ -81,14 +79,14 @@ class MessengerBot:
             self._api.send_text_message(user_id, f"Picture was sent to: {', '.join(matching_names)}.")
 
         if len(unrecognised_faces) > 0:
-            self._unresolved_picture_repository.save(user_id, picture_url, [e for i, e in enumerate(embeddings) if i in unrecognised_faces])
+            self._user_repository.find_by_id(user_id).add_unresolved_picture(picture_url, [e for i, e in enumerate(embeddings) if i in unrecognised_faces])
             faces = self._face_recognition.get_cropped_faces_from_image(picture)
             self._api.send_text_message(user_id, f"Couldn't recognise {len(unrecognised_faces)} out of {len(embeddings)} faces. Please input their names in the following order:")
             for i in unrecognised_faces:
                 self._api.send_picture(user_id, faces[i])
 
     def resolve_next_face(self, user_id, suggested_full_name):
-        picture_url, embedding = self._unresolved_picture_repository.pop_next_unresolved_face(user_id)
+        picture_url, embedding = self._user_repository.find_by_id(user_id).pop_next_unresolved_face()
         matching_users = [user for id, user in self._user_repository.find_all_registered().items() if user.full_name() == suggested_full_name]
         if len(matching_users) > 0:
             matched_user = matching_users[0]
@@ -107,4 +105,4 @@ class MessengerBot:
             return False
 
     def is_user_resolving_faces(self, user_id):
-        return self._unresolved_picture_repository.has_unresolved_picture(user_id)
+        return self._user_repository.find_by_id(user_id).has_unresolved_picture()
